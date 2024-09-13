@@ -13,7 +13,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 6.2.0
-    itemVersion: 1.34.10
+    itemVersion: 1.34.37
     packID: Base
     packName: Base
     packPropagationLabels:
@@ -30,7 +30,7 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('DeleteIndicatorRelationships', 'start', __line__())
-  ### pack version: 1.34.10
+  demisto.debug('pack name = Base, pack version = 1.34.37')
 
 
 
