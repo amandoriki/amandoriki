@@ -1,0 +1,87 @@
+contentitemexportablefields:
+  contentitemfields:
+    definitionid: ""
+    fromServerVersion: ""
+    itemVersion: ""
+    packID: ""
+    packName: ""
+    prevname: ""
+    propagationLabels:
+    - all
+    toServerVersion: ""
+id: 0832f5c5-2dff-491e-8679-ae2741f5e296
+inputs: []
+name: playbook 2
+outputs: []
+quiet: true
+starttaskid: "0"
+tasks:
+  "0":
+    continueonerrortype: ""
+    id: "0"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    nexttasks:
+      '#none#':
+      - "1"
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 0a1b2111-7658-454d-896d-e266251a39b3
+      iscommand: false
+      name: ""
+      version: -1
+    taskid: 0a1b2111-7658-454d-896d-e266251a39b3
+    timertriggers: []
+    type: start
+    view: |-
+      {
+        "position": {
+          "x": 540,
+          "y": 50
+        }
+      }
+  "1":
+    continueonerrortype: ""
+    id: "1"
+    ignoreworker: false
+    isautoswitchedtoquietmode: false
+    isoversize: false
+    note: false
+    quietmode: 0
+    separatecontext: false
+    skipunavailable: false
+    task:
+      brand: ""
+      id: 5a0212b1-d748-48c8-805c-c145c2c629de
+      iscommand: false
+      name: Hello
+      type: regular
+      version: -1
+    taskid: 5a0212b1-d748-48c8-805c-c145c2c629de
+    timertriggers: []
+    type: regular
+    view: |-
+      {
+        "position": {
+          "x": 500,
+          "y": 240
+        }
+      }
+version: -1
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 285,
+        "width": 420,
+        "x": 500,
+        "y": 50
+      }
+    }
+  }
