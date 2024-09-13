@@ -361,12 +361,12 @@ tasks:
     separatecontext: false
     skipunavailable: true
     task:
-      brand: XFE
-      description: Retrieve CVE information from XFE.
+      brand: ""
+      description: Search for details about the given CVE.
       id: d2ff276a-dd81-4805-80c3-ee44976b4020
       iscommand: true
       name: Get CVE information from XFE
-      script: XFE|||cve-search
+      script: '|||cve-search'
       type: regular
       version: -1
     taskid: d2ff276a-dd81-4805-80c3-ee44976b4020
