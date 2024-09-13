@@ -6,7 +6,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.34.10
+    itemVersion: 1.34.37
     packID: Base
     packName: Base
     packPropagationLabels:
@@ -22,7 +22,7 @@ pswd: ""
 runas: DBotWeakRole
 runonce: false
 script: |
-  ### pack version: 1.34.10
+  demisto.debug('pack name = Base, pack version = 1.34.37')
   """Common functions script
   This script will be appended to each server script before being executed.
   Please notice that to add custom common code, add it to the CommonServerUserPython script.
@@ -70,24 +70,14 @@ script: |
   }
 
   XSIAM_EVENT_CHUNK_SIZE = 2 ** 20  # 1 Mib
-  XSIAM_EVENT_CHUNK_SIZE_LIMIT = 9 * (10 ** 6)  # 9 MB
+  XSIAM_EVENT_CHUNK_SIZE_LIMIT = 4 * (10 ** 6)  # 4 MB
   ASSETS = "assets"
   EVENTS = "events"
   DATA_TYPES = [EVENTS, ASSETS]
   MASK = '<XX_REPLACED>'
   SEND_PREFIX = "send: b'"
   SAFE_SLEEP_START_TIME = datetime.now()
-
-  try:
-      if 'ExecutedCommands' in demisto.callingContext['context'] \
-              and demisto.callingContext['context']['ExecutedCommands'] is not None \
-              and len(demisto.callingContext['context']['ExecutedCommands']) > 0 \
-              and 'name' in demisto.callingContext['context']['ExecutedCommands'][0]:
-          context_executed_commands_name = demisto.callingContext['context']['ExecutedCommands'][0]['name']
-          with open('script_info.txt', 'w') as file_demisto_info:
-              file_demisto_info.write(context_executed_commands_name)
-  except Exception as exc_script_info:
-      demisto.info('failed to save the script info.\nError: {}'.format(exc_script_info))
+  MAX_ERROR_MESSAGE_LENGTH = 50000
 
 
   def register_module_line(module_name, start_end, line, wrapper=0):
@@ -1630,9 +1620,9 @@ script: |
   class IntegrationLogger(object):
       """
         a logger for python integrations:
-        use LOG(<message>) to add a record to the logger (message can be any object with __str__)
-        use LOG.print_log(verbose=True/False) to display all records in War-Room (if verbose) and server log.
-        use add_replace_strs to add sensitive strings that should be replaced before going to the log.
+        use `LOG(<message>)` to add a record to the logger (message can be any object with __str__)
+        use `LOG.print_log(verbose=True/False)` to display all records in War-Room (if verbose) and server log.
+        use `add_replace_strs` to add sensitive strings that should be replaced before going to the log.
 
         :type message: ``str``
         :param message: The message to be logged
@@ -1836,8 +1826,8 @@ script: |
 
   """
   a logger for python integrations:
-  use LOG(<message>) to add a record to the logger (message can be any object with __str__)
-  use LOG.print_log() to display all records in War-Room and server log.
+  use `LOG(<message>)` to add a record to the logger (message can be any object with __str__)
+  use `LOG.print_log()` to display all records in War-Room and server log.
   """
   LOG = IntegrationLogger(debug_logging=is_debug_mode())
 
@@ -7152,7 +7142,11 @@ script: |
       try:
           return demisto.callingContext['context']['ExecutedCommands'][0]['moduleBrand'] != 'Scripts'
       except (KeyError, IndexError, TypeError):
-          return True
+          try:
+              # In dynamic-section scripts ExecutedCommands is None and another way is needed to verify if we are in a Script.
+              return demisto.callingContext['context']['ScriptName'] == ''
+          except (KeyError, IndexError, TypeError):
+              return True
 
 
   EXECUTION_METRICS_SCRIPT_SKIP_MSG = "returning results with Type=EntryType.EXECUTION_METRICS isn't fully supported for scripts. dropping result."
@@ -7283,7 +7277,7 @@ script: |
           Returns error entry with given message and exits the script
 
           :type message: ``str``
-          :param message: The message to return in the entry (required)
+          :param message: The message to return to the entry (required)
 
           :type error: ``str`` or Exception
           :param error: The raw error message to log (optional)
@@ -7322,6 +7316,10 @@ script: |
       if is_server_handled:
           raise Exception(message)
       else:
+          if len(message) > MAX_ERROR_MESSAGE_LENGTH:
+              half_length = MAX_ERROR_MESSAGE_LENGTH // 2
+              message = message[:half_length] + "...This error body was truncated..." + message[half_length * (-1):]
+
           demisto.results({
               'Type': entryTypes['error'],
               'ContentsFormat': formats['text'],
@@ -8297,7 +8295,7 @@ script: |
 
 
   def get_demisto_version_as_str():
-      """Get the Demisto Server version as a string <version>-<build>. If unknown will return: 'Unknown'.
+      """Get the Demisto Server version as a string `<version>-<build>`. If unknown will return: 'Unknown'.
       Meant to be use in places where we want to display the version. If you want to perform logic based upon vesrion
       use: is_demisto_version_ge.
 
@@ -8420,6 +8418,14 @@ script: |
       :rtype: ``bool``
       """
       return demisto.demistoVersion().get("platform") == "x2"
+
+
+  def is_using_engine():
+      """Determines whether or not the platform is using engine.
+      :return: True iff the platform is using engine.
+      :rtype: ``bool``
+      """
+      return demisto.demistoVersion().get("engine")
 
 
   class DemistoHandler(logging.Handler):
@@ -9331,7 +9337,7 @@ script: |
 
   def generic_http_request(method,
                            server_url,
-                           timeout=10,
+                           timeout=60,
                            verify=True,
                            proxy=False,
                            client_headers=None,
@@ -11662,12 +11668,14 @@ script: |
           data = data.split('\n')
       for data_part in data:
           if chunk_size >= target_chunk_size:
+              demisto.debug("reached max chunk size, sending chunk with size: {size}".format(size=chunk_size))
               yield chunk
               chunk = []
               chunk_size = 0
           chunk.append(data_part)
           chunk_size += sys.getsizeof(data_part)
       if chunk_size != 0:
+          demisto.debug("sending the remaining chunk with size: {size}".format(size=chunk_size))
           yield chunk
 
 
@@ -11832,7 +11840,7 @@ script: |
 
   def send_data_to_xsiam(data, vendor, product, data_format=None, url_key='url', num_of_attempts=3,
                          chunk_size=XSIAM_EVENT_CHUNK_SIZE, data_type=EVENTS, should_update_health_module=True,
-                         add_proxy_to_request=False):
+                         add_proxy_to_request=False, snapshot_id='', items_count=None):
       """
       Send the supported fetched data types into the XDR data-collector private api.
 
@@ -11870,6 +11878,12 @@ script: |
       :type add_proxy_to_request: ``bool``
       :param add_proxy_to_request: whether to add proxy to the send evnets request.
 
+      :type snapshot_id: ``str``
+      :param snapshot_id: the snapshot id.
+
+      :type items_count: ``str``
+      :param items_count: the asset snapshot items count.
+
       :return: None
       :rtype: ``None``
       """
@@ -11879,7 +11893,8 @@ script: |
       calling_context = demisto.callingContext.get('context', {})
       instance_name = calling_context.get('IntegrationInstance', '')
       collector_name = calling_context.get('IntegrationBrand', '')
-      items_count = len(data) if isinstance(data, list) else 1
+      if not items_count:
+          items_count = len(data) if isinstance(data, list) else 1
       if data_type not in DATA_TYPES:
           demisto.debug("data type must be one of these values: {types}".format(types=DATA_TYPES))
           return
@@ -11920,7 +11935,9 @@ script: |
           'collector-type': ASSETS if data_type == ASSETS else EVENTS
       }
       if data_type == ASSETS:
-          headers['snapshot-id'] = str(round(time.time() * 1000))
+          if not snapshot_id:
+              snapshot_id = str(round(time.time() * 1000))
+          headers['snapshot-id'] = instance_name + snapshot_id
           headers['total-items-count'] = str(items_count)
 
       header_msg = 'Error sending new {data_type} into XSIAM.\n'.format(data_type=data_type)
@@ -11962,7 +11979,7 @@ script: |
           xsiam_api_call_with_retries(client=client, events_error_handler=data_error_handler,
                                       error_msg=header_msg, headers=headers,
                                       num_of_attempts=num_of_attempts, xsiam_url=xsiam_url,
-                                      zipped_data=zipped_data, is_json_response=True)
+                                      zipped_data=zipped_data, is_json_response=True, data_type=data_type)
 
       if should_update_health_module:
           demisto.updateModuleHealth({'{data_type}Pulled'.format(data_type=data_type): data_size})
@@ -12042,42 +12059,70 @@ script: |
       return hasattr(demisto, 'isTimeSensitive') and demisto.isTimeSensitive()
 
 
+  def parse_json_string(json_string):
+      """
+      Parse a JSON string into a Python dictionary.
+
+      :type json_string: ``str``
+      :param json_string: The JSON string to be parsed.
+
+      :rtype: ``dict``
+      :return: A Python dictionary representing the parsed JSON data.
+      """
+      try:
+          data = json.loads(json_string)
+          return data
+      except json.JSONDecodeError as error:  # type: ignore[attr-defined]
+          demisto.error("Error decoding JSON: {error}".format(error=error))
+          return {}
+
+
+  def get_server_config():
+      """
+      Retrieves XSOAR server configuration.
+
+      :rtype: ``dict``
+      :return: The XSOAR server configuration.
+      """
+      response = demisto.internalHttpRequest(method='GET', uri='/system/config')
+      body = parse_json_string(response.get('body'))
+      server_config = body.get('sysConf', {})
+      return server_config
+
+
 
   ### GENERATED CODE ###: from DemistoClassApiModule import *
   # This code was inserted in place of an API module.
   register_module_line('DemistoClassApiModule', 'start', __line__(), wrapper=-3)
 
+  import sys
 
-  # Only the following integrations and scripts are using the Demisto class wrapper
-  DEMISTO_WRAPPER_INTEGRATIONS = ['Cortex XDR - IR', 'QRadar v3', 'SlackV3', 'ServiceNow v2']
-  DEMISTO_WRAPPER_SCRIPTS = ['UnzipFile', 'DBotFindSimilarIncidents', 'ParseCSV']
+  if sys.version_info[0] >= 3:
+      try:
+          class DemistoWrapper(Demisto):  # type:ignore  [name-defined] # noqa: F821 # pylint: disable=E0602
+              """A content-side wrapper to the builtin Demisto class.
+              All methods of this class can be executed in both scripts and integrations
+              (E.g., self.results). """
 
+          class DemistoScript(DemistoWrapper):
+              def getFilePath(self, id):
+                  self.debug("Getting path of file entry with ID {}".format(id))
+                  return super(DemistoScript, self).getFilePath(id)
 
-  try:
-      class DemistoWrapper(Demisto):  # type:ignore  [name-defined] # noqa: F821 # pylint: disable=E0602
-          """A content-side wrapper to the builtin Demisto class.
-          All methods of this class can be executed in both scripts and integrations
-          (E.g., self.results). """
+          class DemistoIntegration(DemistoWrapper):
+              def incidents(self, incidents):
+                  if isinstance(incidents, list):
+                      self.debug("[fetch-incidents] Creating {} incidents".format(len(incidents)))
+                  super(DemistoIntegration, self).incidents(incidents)
 
-      class DemistoScript(DemistoWrapper):
-          def getFilePath(self, id):
-              self.debug("Getting path of file entry with ID {}".format(id))
-              return super(DemistoScript, self).getFilePath(id)
+          if demisto.callingContext.get('context', {}).get('IntegrationBrand'):
+              demisto.__class__ = DemistoIntegration
+          elif demisto.callingContext.get('context', {}).get('ScriptName'):
+              demisto.__class__ = DemistoScript
 
-      class DemistoIntegration(DemistoWrapper):
-          def incidents(self, incidents):
-              if isinstance(incidents, list):
-                  self.debug("[fetch-incidents] Creating {} incidents".format(len(incidents)))
-              super(DemistoIntegration, self).incidents(incidents)
-
-      if demisto.callingContext.get('context', {}).get('IntegrationBrand', '') in DEMISTO_WRAPPER_INTEGRATIONS:
-          demisto.__class__ = DemistoIntegration
-      elif demisto.callingContext.get('context', {}).get('ScriptName', '') in DEMISTO_WRAPPER_SCRIPTS:
-          demisto.__class__ = DemistoScript
-
-  except NameError:
-      # NameError will be raised only in tests, where a Demisto class isn't defined.
-      pass
+      except NameError:
+          # NameError will be raised only in tests, where a Demisto class isn't defined.
+          pass
 
   register_module_line('DemistoClassApiModule', 'end', __line__(), wrapper=1)
   ### END GENERATED CODE ###     # type:ignore [no-redef]  # noqa:E402
