@@ -13,7 +13,7 @@
 	"itemVersion": "2.5.4",
 	"keyTypeMap": null,
 	"locked": false,
-	"logicalVersion": 0,
+	"logicalVersion": 1,
 	"mapping": {
 		"Access": {
 			"dontMapEventToLabels": false,
