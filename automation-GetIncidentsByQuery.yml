@@ -62,7 +62,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 1.34.10
+    itemVersion: 1.34.37
     packID: Base
     packName: Base
     packPropagationLabels:
@@ -86,7 +86,7 @@ runas: DBotWeakRole
 runonce: false
 script: |
   register_module_line('GetIncidentsByQuery', 'start', __line__())
-  ### pack version: 1.34.10
+  demisto.debug('pack name = Base, pack version = 1.34.37')
 
 
   import pickle
@@ -303,7 +303,10 @@ script: |
       """
       query = args.get("query")
       incident_types = argToList(args.get("incidentTypes"), transform=str.strip)
-      populate_fields = argToList(args.get("populateFields"), transform=str.strip)
+      populate_fields = args.get("populateFields")
+      if populate_fields is not None:
+          populate_fields = populate_fields.replace("|", ",")
+          populate_fields = argToList(populate_fields, transform=str.strip)
       non_empty_fields = argToList(args.get("NonEmptyFields"), transform=str.strip)
       time_field = args.get("timeField") or DEFAULT_TIME_FIELD
       from_date = arg_to_datetime(args.get("fromDate"))
