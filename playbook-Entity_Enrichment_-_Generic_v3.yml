@@ -2,7 +2,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 2.3.66
+    itemVersion: 2.6.39
     packID: CommonPlaybooks
     packName: Common Playbooks
     packPropagationLabels:
@@ -23,11 +23,9 @@ inputs:
       root: IP
       transformers:
       - operator: uniq
-- description: 'A list of internal IP ranges to check IP addresses against. The list
-    should be provided in CIDR notation, separated by commas. An example of a list
-    of ranges would be: "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16" (without quotes).
-    If a list is not provided, will use default list provided in the IsIPInRanges
-    script (the known IPv4 private address ranges).'
+- description: 'A list of internal IP ranges to check IP addresses against. The comma-separated
+    list should be provided in CIDR notation. For example, of a list of ranges would
+    be: "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16" (without quotes).'
   key: InternalRange
   playbookInputQuery: null
   required: false
@@ -134,6 +132,27 @@ inputs:
     complex:
       accessor: ID
       root: CVE
+- description: |-
+    Whether to verify SSL certificates for URLs.
+    Can be True or False.
+  key: URLSSLVerification
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: Whether to execute the reputation command on the indicator.
+  key: UseReputationCommand
+  playbookInputQuery: null
+  required: false
+  value:
+    simple: "False"
+- description: |-
+    Optional - This input is needed for the IAM-get-user command (used in the Account Enrichment - IAM playbook). Please provide the domain name that the user is related to.
+    Example: @xsoar.com
+  key: AccountDomain
+  playbookInputQuery: null
+  required: false
+  value: {}
 name: Entity Enrichment - Generic v3
 outputs:
 - contextPath: IP
@@ -240,6 +259,153 @@ outputs:
   description: The device information about the hostname that was enriched using Cylance
     Protect v2.
   type: unknown
+- contextPath: PaloAltoNetworksXDR.RiskyUser
+  description: The account object.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.type
+  description: Form of identification element.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.id
+  description: Identification value of the type field.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.score
+  description: The score assigned to the user.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons
+  description: The account risk objects.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons.date created
+  description: Date when the incident was created.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons.description
+  description: Description of the incident.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons.severity
+  description: The severity of the incident.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons.status
+  description: The incident status.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyUser.reasons.points
+  description: The score.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost
+  description: The endpoint object.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.type
+  description: Form of identification element.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.id
+  description: Identification value of the type field.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.score
+  description: The score assigned to the host.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons
+  description: The endpoint risk objects.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons.date created
+  description: Date when the incident was created.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons.description
+  description: Description of the incident.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons.severity
+  description: The severity of the incident.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons.status
+  description: The incident status.
+  type: string
+- contextPath: PaloAltoNetworksXDR.RiskyHost.reasons.points
+  description: The score.
+  type: string
+- contextPath: Core
+  description: An object containing risky users and risky hosts as identified by the
+    Core ITDR module.
+  type: unknown
+- contextPath: Core.RiskyUser
+  description: The risky user object.
+  type: unknown
+- contextPath: Core.RiskyUser.type
+  description: Form of identification element.
+- contextPath: Core.RiskyUser.id
+  description: Identification value of the type field.
+- contextPath: Core.RiskyUser.score
+  description: The score assigned to the user.
+- contextPath: Core.RiskyUser.reasons
+  description: The reasons for the user risk level.
+  type: unknown
+- contextPath: Core.RiskyUser.reasons.date created
+  description: Date when the incident was created.
+- contextPath: Core.RiskyUser.reasons.description
+  description: Description of the incident.
+- contextPath: Core.RiskyUser.reasons.severity
+  description: The severity of the incident.
+- contextPath: Core.RiskyUser.reasons.status
+  description: The incident status.
+- contextPath: Core.RiskyUser.reasons.points
+  description: The score.
+- contextPath: Core.Endpoint
+  description: The endpoint object.
+  type: unknown
+- contextPath: Core.RiskyHost
+  description: The risky host object.
+  type: unknown
+- contextPath: Core.Endpoint.endpoint_id
+  description: The endpoint ID.
+- contextPath: Core.Endpoint.endpoint_name
+  description: The endpoint name.
+- contextPath: Core.Endpoint.endpoint_type
+  description: The endpoint type.
+- contextPath: Core.Endpoint.endpoint_status
+  description: The status of the endpoint.
+- contextPath: Core.Endpoint.os_type
+  description: The endpoint OS type.
+- contextPath: Core.Endpoint.ip
+  description: A list of IP addresses.
+- contextPath: Core.Endpoint.users
+  description: A list of users.
+- contextPath: Core.Endpoint.domain
+  description: The endpoint domain.
+- contextPath: Core.Endpoint.alias
+  description: The endpoint's aliases.
+- contextPath: Core.Endpoint.first_seen
+  description: First seen date/time in Epoch (milliseconds).
+- contextPath: Core.Endpoint.last_seen
+  description: Last seen date/time in Epoch (milliseconds).
+- contextPath: Core.Endpoint.content_version
+  description: Content version.
+- contextPath: Core.Endpoint.installation_package
+  description: Installation package.
+- contextPath: Core.Endpoint.active_directory
+  description: Active directory.
+- contextPath: Core.Endpoint.install_date
+  description: Install date in Epoch (milliseconds).
+- contextPath: Core.Endpoint.endpoint_version
+  description: Endpoint version.
+- contextPath: Core.Endpoint.is_isolated
+  description: Whether the endpoint is isolated.
+- contextPath: Core.Endpoint.group_name
+  description: The name of the group to which the endpoint belongs.
+- contextPath: Core.RiskyHost.type
+  description: Form of identification element.
+- contextPath: Core.RiskyHost.id
+  description: Identification value of the type field.
+- contextPath: Core.RiskyHost.score
+  description: The score assigned to the host.
+- contextPath: Core.RiskyHost.reasons
+  description: The reasons for the risk level.
+  type: unknown
+- contextPath: Core.RiskyHost.reasons.date created
+  description: Date when the incident was created.
+- contextPath: Core.RiskyHost.reasons.description
+  description: Description of the incident.
+- contextPath: Core.RiskyHost.reasons.severity
+  description: The severity of the incident.
+- contextPath: Core.RiskyHost.reasons.status
+  description: The incident status.
+- contextPath: Core.RiskyHost.reasons.points
+  description: The score.
 starttaskid: "0"
 system: true
 tasks:
@@ -321,6 +487,8 @@ tasks:
     note: false
     quietmode: 0
     scriptarguments:
+      ExecutedFromParent:
+        simple: "True"
       IP:
         complex:
           root: inputs.IP
@@ -334,6 +502,12 @@ tasks:
       ResolveIP:
         complex:
           root: inputs.ResolveIP
+      UseReputationCommand:
+        simple: ${inputs.UseReputationCommand}
+      extended_data:
+        simple: "False"
+      threat_model_association:
+        simple: "False"
     separatecontext: true
     skipunavailable: false
     task:
@@ -395,6 +569,8 @@ tasks:
           root: inputs.SHA256
           transformers:
           - operator: uniq
+      UseReputationCommand:
+        simple: ${inputs.UseReputationCommand}
     separatecontext: true
     skipunavailable: false
     task:
@@ -440,19 +616,30 @@ tasks:
           root: inputs.URL
           transformers:
           - operator: uniq
+      UseReputationCommand:
+        simple: ${inputs.UseReputationCommand}
       VerifyURL:
-        simple: "False"
+        complex:
+          root: inputs.URLSSLVerification
     separatecontext: true
     skipunavailable: false
     task:
       brand: ""
-      id: b00cb02f-d44b-4e40-8c27-281d17a94723
+      description: |-
+        Enrich URLs using one or more integrations.
+
+        URL enrichment includes:
+        * SSL verification for URLs
+        * Threat information
+        * Providing of URL screenshots
+        * URL Reputation using !url
+      id: a80df9df-c0d4-4d25-88d1-39a974a9c2cb
       iscommand: false
       name: URL Enrichment - Generic v2
       playbookId: URL Enrichment - Generic v2
       type: playbook
       version: -1
-    taskid: b00cb02f-d44b-4e40-8c27-281d17a94723
+    taskid: a80df9df-c0d4-4d25-88d1-39a974a9c2cb
     timertriggers: []
     type: playbook
     view: |-
@@ -484,6 +671,8 @@ tasks:
           root: inputs.Domain
           transformers:
           - operator: uniq
+      UseReputationCommand:
+        simple: ${inputs.UseReputationCommand}
     separatecontext: true
     skipunavailable: false
     task:
@@ -541,6 +730,8 @@ tasks:
           root: inputs.InternalDomains
           transformers:
           - operator: uniq
+      UseReputationCommand:
+        simple: ${inputs.UseReputationCommand}
     separatecontext: true
     skipunavailable: false
     task:
@@ -579,6 +770,11 @@ tasks:
     note: false
     quietmode: 0
     scriptarguments:
+      Domain:
+        complex:
+          root: inputs.AccountDomain
+          transformers:
+          - operator: uniq
       Username:
         complex:
           root: inputs.Username
@@ -588,13 +784,26 @@ tasks:
     skipunavailable: false
     task:
       brand: ""
-      id: 7f313517-52cb-4653-8c77-08819d4910f3
+      description: |-
+        Enrich accounts using one or more integrations.
+        Supported integrations:
+        - Active Directory
+        - Microsoft Graph User
+        - SailPoint IdentityNow
+        - SailPoint IdentityIQ
+        - PingOne
+        - Okta
+        - AWS IAM
+        - Cortex XDR (account enrichment and reputation)
+
+        Also, the playbook supports the generic command 'iam-get-user' (implemented in IAM integrations. For more information, visit https://xsoar.pan.dev/docs/integrations/iam-integrations.
+      id: 3543872e-d47e-47a3-8456-39ff9ccfcabd
       iscommand: false
       name: Account Enrichment - Generic v2.1
       playbookId: Account Enrichment - Generic v2.1
       type: playbook
       version: -1
-    taskid: 7f313517-52cb-4653-8c77-08819d4910f3
+    taskid: 3543872e-d47e-47a3-8456-39ff9ccfcabd
     timertriggers: []
     type: playbook
     view: |-

@@ -2,7 +2,7 @@ contentitemexportablefields:
   contentitemfields:
     definitionid: ""
     fromServerVersion: 5.0.0
-    itemVersion: 2.3.66
+    itemVersion: 2.6.39
     packID: CommonPlaybooks
     packName: Common Playbooks
     packPropagationLabels:
@@ -188,6 +188,15 @@ tasks:
                     right:
                       value:
                         simple: XFE
+                  - ignorecase: true
+                    left:
+                      iscontext: true
+                      value:
+                        simple: modules.brand
+                    operator: isEqualString
+                    right:
+                      value:
+                        simple: XFE_v2
                 - - ignorecase: true
                     left:
                       iscontext: true
@@ -199,6 +208,8 @@ tasks:
                         simple: active
                 root: modules
           operator: isExists
+          right:
+            value: {}
       label: "yes"
     continueonerrortype: ""
     id: "4"
@@ -344,18 +355,18 @@ tasks:
     note: false
     quietmode: 0
     scriptarguments:
-      cveId:
+      cve_id:
         complex:
           root: inputs.cve_id
     separatecontext: false
     skipunavailable: true
     task:
-      brand: XFE
-      description: Retrieve CVE information from XFE.
+      brand: ""
+      description: Search for details about the given CVE.
       id: d2ff276a-dd81-4805-80c3-ee44976b4020
       iscommand: true
       name: Get CVE information from XFE
-      script: XFE|||cve-search
+      script: '|||cve-search'
       type: regular
       version: -1
     taskid: d2ff276a-dd81-4805-80c3-ee44976b4020
